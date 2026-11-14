@@ -81,16 +81,17 @@ static int susfs_update_sus_path_inode(char *target_pathname) {
 	return 0;
 }
 
-int susfs_add_sus_path(struct st_susfs_sus_path* __user user_info) {
+void susfs_add_sus_path(void __user **user_info) {
 	struct st_susfs_sus_path info;
 	struct st_susfs_sus_path_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
 	int bkt;
 	bool update_hlist = false;
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
 
-	if (copy_from_user(&info, user_info, sizeof(info))) {
+	if (!uptr || copy_from_user(&info, uptr, sizeof(info))) {
 		SUSFS_LOGE("failed copying from userspace\n");
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_spin_lock);
@@ -107,14 +108,14 @@ int susfs_add_sus_path(struct st_susfs_sus_path* __user user_info) {
 	new_entry = kmalloc(sizeof(struct st_susfs_sus_path_hlist), GFP_KERNEL);
 	if (!new_entry) {
 		SUSFS_LOGE("no enough memory\n");
-		return 1;
+		return;
 	}
 
 	new_entry->target_ino = info.target_ino;
 	strncpy(new_entry->target_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME-1);
 	if (susfs_update_sus_path_inode(new_entry->target_pathname)) {
 		kfree(new_entry);
-		return 1;
+		return;
 	}
 	spin_lock(&susfs_spin_lock);
 	hash_add(SUS_PATH_HLIST, &new_entry->node, info.target_ino);
@@ -126,7 +127,6 @@ int susfs_add_sus_path(struct st_susfs_sus_path* __user user_info) {
 				new_entry->target_ino, new_entry->target_pathname);
 	}
 	spin_unlock(&susfs_spin_lock);
-	return 0;
 }
 
 int susfs_sus_ino_for_filldir64(unsigned long ino) {
@@ -342,21 +342,22 @@ static int susfs_update_sus_kstat_inode(char *target_pathname) {
 	return 0;
 }
 
-int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
+void susfs_add_sus_kstat(void __user **user_info) {
 	struct st_susfs_sus_kstat info;
 	struct st_susfs_sus_kstat_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
 	int bkt;
 	bool update_hlist = false;
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
 
-	if (copy_from_user(&info, user_info, sizeof(info))) {
+	if (!uptr || copy_from_user(&info, uptr, sizeof(info))) {
 		SUSFS_LOGE("failed copying from userspace\n");
-		return 1;
+		return;
 	}
 
 	if (strlen(info.target_pathname) == 0) {
 		SUSFS_LOGE("target_pathname is an empty string\n");
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_spin_lock);
@@ -373,7 +374,7 @@ int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
 	new_entry = kmalloc(sizeof(struct st_susfs_sus_kstat_hlist), GFP_KERNEL);
 	if (!new_entry) {
 		SUSFS_LOGE("no enough memory\n");
-		return 1;
+		return;
 	}
 
 #if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
@@ -391,7 +392,7 @@ int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
 
 	if (susfs_update_sus_kstat_inode(new_entry->info.target_pathname)) {
 		kfree(new_entry);
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_spin_lock);
@@ -434,32 +435,29 @@ int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
 	}
 #endif
 	spin_unlock(&susfs_spin_lock);
-	return 0;
 }
 
-int susfs_update_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
+void susfs_update_sus_kstat(void __user **user_info) {
 	struct st_susfs_sus_kstat info;
 	struct st_susfs_sus_kstat_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
 	int bkt;
-	int err = 0;
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
 
-	if (copy_from_user(&info, user_info, sizeof(info))) {
+	if (!uptr || copy_from_user(&info, uptr, sizeof(info))) {
 		SUSFS_LOGE("failed copying from userspace\n");
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_spin_lock);
 	hash_for_each_safe(SUS_KSTAT_HLIST, bkt, tmp_node, tmp_entry, node) {
 		if (!strcmp(tmp_entry->info.target_pathname, info.target_pathname)) {
 			if (susfs_update_sus_kstat_inode(tmp_entry->info.target_pathname)) {
-				err = 1;
 				goto out_spin_unlock;
 			}
 			new_entry = kmalloc(sizeof(struct st_susfs_sus_kstat_hlist), GFP_KERNEL);
 			if (!new_entry) {
 				SUSFS_LOGE("no enough memory\n");
-				err = 1;
 				goto out_spin_unlock;
 			}
 			memcpy(&new_entry->info, &tmp_entry->info, sizeof(tmp_entry->info));
@@ -485,7 +483,6 @@ int susfs_update_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
 	}
 out_spin_unlock:
 	spin_unlock(&susfs_spin_lock);
-	return err;
 }
 
 void susfs_sus_ino_for_generic_fillattr(unsigned long ino, struct kstat *stat) {
@@ -526,27 +523,28 @@ void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned 
 /* try_umount */
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 static LIST_HEAD(LH_TRY_UMOUNT_PATH);
-int susfs_add_try_umount(struct st_susfs_try_umount* __user user_info) {
+void susfs_add_try_umount(void __user **user_info) {
 	struct st_susfs_try_umount_list *cursor = NULL, *temp = NULL;
 	struct st_susfs_try_umount_list *new_list = NULL;
 	struct st_susfs_try_umount info;
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
 
-	if (copy_from_user(&info, user_info, sizeof(info))) {
+	if (!uptr || copy_from_user(&info, uptr, sizeof(info))) {
 		SUSFS_LOGE("failed copying from userspace\n");
-		return 1;
+		return;
 	}
 
 	list_for_each_entry_safe(cursor, temp, &LH_TRY_UMOUNT_PATH, list) {
 		if (unlikely(!strcmp(info.target_pathname, cursor->info.target_pathname))) {
 			SUSFS_LOGE("target_pathname: '%s' is already created in LH_TRY_UMOUNT_PATH\n", info.target_pathname);
-			return 1;
+			return;
 		}
 	}
 
 	new_list = kmalloc(sizeof(struct st_susfs_try_umount_list), GFP_KERNEL);
 	if (!new_list) {
 		SUSFS_LOGE("no enough memory\n");
-		return 1;
+		return;
 	}
 
 	memcpy(&new_list->info, &info, sizeof(info));
@@ -556,7 +554,6 @@ int susfs_add_try_umount(struct st_susfs_try_umount* __user user_info) {
 	list_add_tail(&new_list->list, &LH_TRY_UMOUNT_PATH);
 	spin_unlock(&susfs_spin_lock);
 	SUSFS_LOGI("target_pathname: '%s', mnt_mode: %d, is successfully added to LH_TRY_UMOUNT_PATH\n", new_list->info.target_pathname, new_list->info.mnt_mode);
-	return 0;
 }
 
 void susfs_try_umount(uid_t target_uid) {
@@ -662,12 +659,13 @@ static void susfs_my_uname_init(void) {
 	memset(&my_uname, 0, sizeof(my_uname));
 }
 
-int susfs_set_uname(struct st_susfs_uname* __user user_info) {
+void susfs_set_uname(void __user **user_info) {
 	struct st_susfs_uname info;
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
 
-	if (copy_from_user(&info, user_info, sizeof(struct st_susfs_uname))) {
+	if (!uptr || copy_from_user(&info, uptr, sizeof(struct st_susfs_uname))) {
 		SUSFS_LOGE("failed copying from userspace.\n");
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_uname_spin_lock);
@@ -684,7 +682,6 @@ int susfs_set_uname(struct st_susfs_uname* __user user_info) {
 	spin_unlock(&susfs_uname_spin_lock);
 	SUSFS_LOGI("setting spoofed release: '%s', version: '%s'\n",
 				my_uname.release, my_uname.version);
-	return 0;
 }
 
 void susfs_spoof_uname(struct new_utsname* tmp) {
@@ -707,20 +704,37 @@ void susfs_set_log(bool enabled) {
 		pr_info("susfs: disable logging to kernel");
 	}
 }
+
+void susfs_enable_log(void __user **user_info) {
+	struct st_susfs_log info = {0};
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
+
+	if (!uptr || copy_from_user(&info, uptr, sizeof(info))) {
+		SUSFS_LOGE("failed copying from userspace\n");
+		return;
+	}
+	susfs_set_log(info.enabled);
+}
 #endif // #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 
 /* spoof_cmdline_or_bootconfig */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 static char *fake_cmdline_or_bootconfig = NULL;
-int susfs_set_cmdline_or_bootconfig(char* __user user_fake_cmdline_or_bootconfig) {
+void susfs_set_cmdline_or_bootconfig(void __user **user_info) {
 	int res;
+	char __user *user_fake_cmdline_or_bootconfig;
+
+	if (!user_info)
+		return;
+
+	user_fake_cmdline_or_bootconfig = (char __user *)((user_info && *user_info) ? *user_info : (void __user *)user_info);
 
 	if (!fake_cmdline_or_bootconfig) {
 		// 4096 is enough I guess
 		fake_cmdline_or_bootconfig = kmalloc(SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE, GFP_KERNEL);
 		if (!fake_cmdline_or_bootconfig) {
 			SUSFS_LOGE("no enough memory\n");
-			return -ENOMEM;
+			return;
 		}
 	}
 
@@ -735,10 +749,9 @@ int susfs_set_cmdline_or_bootconfig(char* __user user_fake_cmdline_or_bootconfig
 #else
 		SUSFS_LOGI("fake_cmdline_or_bootconfig is set, length of string: %u\n", strlen(fake_cmdline_or_bootconfig));
 #endif
-		return 0;
+		return;
 	}
 	SUSFS_LOGI("failed setting fake_cmdline_or_bootconfig\n");
-	return res;
 }
 
 int susfs_spoof_cmdline_or_bootconfig(struct seq_file *m) {
@@ -780,16 +793,17 @@ out_path_put_target:
 	return err;
 }
 
-int susfs_add_open_redirect(struct st_susfs_open_redirect* __user user_info) {
+void susfs_add_open_redirect(void __user **user_info) {
 	struct st_susfs_open_redirect info;
 	struct st_susfs_open_redirect_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
 	int bkt;
 	bool update_hlist = false;
+	void __user *uptr = (user_info && *user_info) ? *user_info : (void __user *)user_info;
 
-	if (copy_from_user(&info, user_info, sizeof(info))) {
+	if (!uptr || copy_from_user(&info, uptr, sizeof(info))) {
 		SUSFS_LOGE("failed copying from userspace\n");
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_spin_lock);
@@ -806,7 +820,7 @@ int susfs_add_open_redirect(struct st_susfs_open_redirect* __user user_info) {
 	new_entry = kmalloc(sizeof(struct st_susfs_open_redirect_hlist), GFP_KERNEL);
 	if (!new_entry) {
 		SUSFS_LOGE("no enough memory\n");
-		return 1;
+		return;
 	}
 
 	new_entry->target_ino = info.target_ino;
@@ -815,7 +829,7 @@ int susfs_add_open_redirect(struct st_susfs_open_redirect* __user user_info) {
 	if (susfs_update_open_redirect_inode(new_entry)) {
 		SUSFS_LOGE("failed adding path '%s' to OPEN_REDIRECT_HLIST\n", new_entry->target_pathname);
 		kfree(new_entry);
-		return 1;
+		return;
 	}
 
 	spin_lock(&susfs_spin_lock);
@@ -828,7 +842,6 @@ int susfs_add_open_redirect(struct st_susfs_open_redirect* __user user_info) {
 				new_entry->target_ino, new_entry->target_pathname, new_entry->redirected_pathname);
 	}
 	spin_unlock(&susfs_spin_lock);
-	return 0;
 }
 
 struct filename* susfs_get_redirected_path(unsigned long ino) {
@@ -983,6 +996,10 @@ void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info) {
 }
 
 int susfs_add_sus_map(void __user **user_info) {
+	return 0;
+}
+
+int susfs_add_sus_memfd(void __user **user_info) {
 	return 0;
 }
 
