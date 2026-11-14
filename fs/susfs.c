@@ -13,6 +13,7 @@
 #include <linux/version.h>
 #include <linux/fdtable.h>
 #include <linux/statfs.h>
+#include <linux/workqueue.h>
 #include <linux/susfs.h>
 #include "mount.h"
 
@@ -928,6 +929,11 @@ void susfs_init(void) {
 }
 
 /* SuSFS v2 compatibility helpers for KernelSU-Next */
+static void susfs_extra_works_fn(struct work_struct *work) {
+	/* nothing extra to do on this kernel */
+}
+DECLARE_WORK(susfs_extra_works, susfs_extra_works_fn);
+
 void susfs_show_version(void __user **user_info) {
 	struct st_susfs_version info = {0};
 
