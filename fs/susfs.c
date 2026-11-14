@@ -914,6 +914,78 @@ void susfs_init(void) {
 	SUSFS_LOGI("susfs is initialized! version: " SUSFS_VERSION " \n");
 }
 
+/* SuSFS v2 compatibility helpers for KernelSU-Next */
+void susfs_show_version(void __user **user_info) {
+	struct st_susfs_version info = {0};
+
+	if (user_info && *user_info) {
+		if (copy_from_user(&info, (struct st_susfs_version __user*)*user_info, sizeof(info))) {
+			info.err = -EFAULT;
+			goto out_copy;
+		}
+	}
+	strncpy(info.susfs_version, SUSFS_VERSION, sizeof(info.susfs_version) - 1);
+	info.err = 0;
+out_copy:
+	if (user_info && *user_info) {
+		if (copy_to_user((struct st_susfs_version __user*)*user_info, &info, sizeof(info))) {
+			info.err = -EFAULT;
+		}
+	}
+	SUSFS_LOGI("CMD_SUSFS_SHOW_VERSION -> ret: %d\n", info.err);
+}
+
+void susfs_show_variant(void __user **user_info) {
+	struct st_susfs_variant info = {0};
+
+	if (user_info && *user_info) {
+		if (copy_from_user(&info, (struct st_susfs_variant __user*)*user_info, sizeof(info))) {
+			info.err = -EFAULT;
+			goto out_copy;
+		}
+	}
+	strncpy(info.susfs_variant, SUSFS_VARIANT, sizeof(info.susfs_variant) - 1);
+	info.err = 0;
+out_copy:
+	if (user_info && *user_info) {
+		if (copy_to_user((struct st_susfs_variant __user*)*user_info, &info, sizeof(info))) {
+			info.err = -EFAULT;
+		}
+	}
+	SUSFS_LOGI("CMD_SUSFS_SHOW_VARIANT -> ret: %d\n", info.err);
+}
+
+void susfs_get_enabled_features(void __user **user_info) {
+	struct st_susfs_enabled_features info = {0};
+	info.err = 0;
+	if (user_info && *user_info) {
+		if (copy_to_user((struct st_susfs_enabled_features __user*)*user_info, &info, sizeof(info))) {
+			info.err = -EFAULT;
+		}
+	}
+	SUSFS_LOGI("CMD_SUSFS_SHOW_ENABLED_FEATURES -> ret: %d\n", info.err);
+}
+
+void susfs_set_avc_log_spoofing(void __user **user_info) {
+	SUSFS_LOGI("CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING\n");
+}
+
+void susfs_start_sdcard_monitor_fn(void) {
+	// Stub for ksu supercall monitor
+}
+
+void susfs_add_sus_path_loop(void __user **user_info) {
+	SUSFS_LOGI("CMD_SUSFS_ADD_SUS_PATH_LOOP\n");
+}
+
+void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info) {
+	SUSFS_LOGI("CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS\n");
+}
+
+int susfs_add_sus_map(void __user **user_info) {
+	return 0;
+}
+
 /* No module exit is needed becuase it should never be a loadable kernel module */
 //void __init susfs_exit(void)
 

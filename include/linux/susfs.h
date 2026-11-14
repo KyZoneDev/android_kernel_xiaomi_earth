@@ -122,6 +122,21 @@ struct st_sus_su {
 };
 #endif
 
+struct st_susfs_version {
+	char                                    susfs_version[16];
+	int                                     err;
+};
+
+struct st_susfs_variant {
+	char                                    susfs_variant[16];
+	int                                     err;
+};
+
+struct st_susfs_enabled_features {
+	char                                    *enabled_features;
+	int                                     err;
+};
+
 /***********************/
 /* FORWARD DECLARATION */
 /***********************/
@@ -182,5 +197,15 @@ int susfs_sus_su(struct st_sus_su* __user user_info);
 #endif
 /* susfs_init */
 void susfs_init(void);
+
+/* SuSFS v2 compatibility helpers for KernelSU-Next */
+void susfs_show_version(void __user **user_info);
+void susfs_show_variant(void __user **user_info);
+void susfs_get_enabled_features(void __user **user_info);
+void susfs_set_avc_log_spoofing(void __user **user_info);
+void susfs_start_sdcard_monitor_fn(void);
+void susfs_add_sus_path_loop(void __user **user_info);
+void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info);
+int susfs_add_sus_map(void __user **user_info);
 
 #endif
