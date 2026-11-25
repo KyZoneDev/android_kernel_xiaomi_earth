@@ -2221,7 +2221,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 			det->SPEC	= devinfo->CPU_B_SPEC;
 
 			det->VMAX = VMAX_VAL_B;
-			det->max_freq_khz = 2000000;
+			det->max_freq_khz = 2300000;
 #if ENABLE_LOO_B
 			det->loo_role = NO_LOO_BANK;
 		}

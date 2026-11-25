@@ -17,7 +17,7 @@
 /**************************************************
  * MT6768/MT6767 : GPU DVFS OPP table Setting
  **************************************************/
-#define SEG_GPU_DVFS_FREQ0			(1000000)	/* KHz */
+#define SEG_GPU_DVFS_FREQ0			(1200000)	/* KHz */
 #define SEG_GPU_DVFS_FREQ1			(975000)	/* KHz */
 #define SEG_GPU_DVFS_FREQ2			(950000)	/* KHz */
 #define SEG_GPU_DVFS_FREQ3			(925000)	/* KHz */
@@ -50,7 +50,7 @@
 #define SEG_GPU_DVFS_FREQ30			(315000)	/* KHz */
 #define SEG_GPU_DVFS_FREQ31			(299000)	/* KHz */
 
-#define SEG_GPU_DVFS_VOLT0		(95000)		/* mV x 100 */
+#define SEG_GPU_DVFS_VOLT0		(100000)	/* mV x 100 */
 #define SEG_GPU_DVFS_VOLT1		(92500)		/* mV x 100 */
 #define SEG_GPU_DVFS_VOLT2		(90000)		/* mV x 100 */
 #define SEG_GPU_DVFS_VOLT3		(87500)		/* mV x 100 */
@@ -83,7 +83,7 @@
 #define SEG_GPU_DVFS_VOLT30		(61875)		/* mV x 100 */
 #define SEG_GPU_DVFS_VOLT31		(61250)		/* mV x 100 */
 
-#define SEG_GPU_DVFS_VSRAM0		(105000)	/* mV x 100 */
+#define SEG_GPU_DVFS_VSRAM0		(110000)	/* mV x 100 */
 #define SEG_GPU_DVFS_VSRAM1		(102500)	/* mV x 100 */
 #define SEG_GPU_DVFS_VSRAM2		(100000)	/* mV x 100 */
 #define SEG_GPU_DVFS_VSRAM3		(97500)		/* mV x 100 */
@@ -102,7 +102,11 @@
 /**************************************************
  * PMIC Setting
  **************************************************/
-#define VGPU_MAX_VOLT		(SEG_GPU_DVFS_VOLT0)
+/* hard VGPU ceiling (1.00V); every OPP volt must stay <= this value */
+#define VGPU_MAX_VOLT		(100000)
+#if SEG_GPU_DVFS_VOLT0 > VGPU_MAX_VOLT
+#error "SEG_GPU_DVFS_VOLT0 exceeds VGPU_MAX_VOLT"
+#endif
 #define VSRAM_GPU_MAX_VOLT	(SEG_GPU_DVFS_VSRAM0)
 #define DELAY_FACTOR		(625)
 #define BUCK_DIFF_MAX		(25000)		/* mV x 100 */
