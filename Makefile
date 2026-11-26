@@ -757,6 +757,25 @@ KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
 KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 KBUILD_CFLAGS += $(call cc-option, -fcatch-undefined-behavior)
+# Newer clang (>= 21/24) promotes/adds warnings that old vendor code trips on
+# while building with -Werror; keep them non-fatal/quiet.
+KBUILD_CFLAGS += $(call cc-disable-warning, constant-conversion)
+KBUILD_CFLAGS += $(call cc-disable-warning, single-bit-bitfield-constant-conversion)
+KBUILD_CFLAGS += $(call cc-disable-warning, default-const-init-var-unsafe)
+KBUILD_CFLAGS += $(call cc-disable-warning, default-const-init-field-unsafe)
+KBUILD_CFLAGS += $(call cc-disable-warning, unterminated-string-initialization)
+KBUILD_CFLAGS += $(call cc-disable-warning, bitwise-instead-of-logical)
+KBUILD_CFLAGS += $(call cc-disable-warning, deprecated-non-prototype)
+KBUILD_CFLAGS += $(call cc-disable-warning, unknown-warning-option)
+KBUILD_CFLAGS += $(call cc-disable-warning, strict-prototypes)
+KBUILD_CFLAGS += $(call cc-disable-warning, enum-conversion)
+KBUILD_CFLAGS += $(call cc-disable-warning, sometimes-uninitialized)
+KBUILD_CFLAGS += $(call cc-disable-warning, pointer-to-int-cast)
+KBUILD_CFLAGS += $(call cc-disable-warning, void-pointer-to-enum-cast)
+KBUILD_CFLAGS += $(call cc-disable-warning, int-in-bool-context)
+KBUILD_CFLAGS += $(call cc-disable-warning, array-bounds)
+KBUILD_CFLAGS += $(call cc-disable-warning, implicit-enum-enum-cast)
+KBUILD_CFLAGS += $(call cc-disable-warning, missing-multilib)
 endif
 
 # These warnings generated too much noise in a regular build.
